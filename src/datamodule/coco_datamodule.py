@@ -1,11 +1,10 @@
-import cv2
-import os
-from pathlib import Path
-from typing import List, Tuple
-from random import Random
-import itertools
-from collections import deque
-from .dataset.coco_dataset import COCODataset
+import pathlib
+
+import torch
+import torch.utils.data
+
+from torchvision import datasets, tv_tensors
+from torchvision.transforms import v2
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader
@@ -17,21 +16,50 @@ class COCODatamodule(LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
 
-    def prepare_data(self):
-        # TODO
-        pass
-
     def setup(self, stage=None):
-        # Initialize COCODataset for train, val, and test sets
-        self.train_dataset = COCODataset(self.data_dir, split="train")
-        self.val_dataset = COCODataset(self.data_dir, split="val")
-        self.test_dataset = COCODataset(self.data_dir, split="test")
+        transforms = v2.Compose(
+            [
+                v2.ToImage(),
+                v2.RandomPhotometricDistort(p=1),
+                v2.RandomZoomOut(fill={tv_tensors.Image: (123, 117, 104), "others": 0}),
+                v2.RandomIoUCrop(),
+                v2.RandomHorizontalFlip(p=1),
+                v2.SanitizeBoundingBoxes(),
+                v2.ToDtype(torch.float32, scale=True),
+            ]
+        )
+        self.train_dataset = datasets.CocoDetection(
+            root=pathlib.Path(self.data_dir) / "train2017",
+            annFile=pathlib.Path(self.data_dir)
+            / "annotations/instances_train2017.json",
+            transforms=transforms,
+        )
+        self.val_dataset = datasets.CocoDetection(
+            root=pathlib.Path(self.data_dir) / "val2017",
+            annFile=pathlib.Path(self.data_dir) / "annotations/instances_val2017.json",
+            transforms=transforms,
+        )
+
+        self.train_dataset = datasets.wrap_dataset_for_transforms_v2(
+            self.train_dataset, target_keys=["boxes", "labels", "masks"]
+        )
+
+        self.val_dataset = datasets.wrap_dataset_for_transforms_v2(
+            self.val_dataset, target_keys=["boxes", "labels", "masks"]
+        )
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            collate_fn=self.collate_fn,
+            shuffle=True,
+        )
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size)
+        return DataLoader(
+            self.val_dataset, batch_size=self.batch_size, collate_fn=self.collate_fn
+        )
 
-    def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size)
+    def collate_fn(self, batch):
+        return tuple(zip(*batch))
