@@ -19,27 +19,56 @@ from torch.distributed.algorithms.ddp_comm_hooks import (
     default_hooks as default,
 )
 
-from src.datamodule.coco_datamodule import COCODatamodule
+from src.models.maskrcnn import MaskRCNN
+
+from src.datamodule.coco_datamodule import COCODataModule
+
+
+def create_model(optimizer, lr, pretrained, restore_from_ckpt):
+    # optimizer
+    if optimizer == "sgd":
+        optimizer = torch.optim.SGD
+    elif optimizer == "adam":
+        optimizer = torch.optim.Adam
+    elif optimizer == "adamw":
+        optimizer = torch.optim.AdamW
+    else:
+        raise ValueError("Invalid optimizer")
+
+    model = MaskRCNN(
+        optimizer=optimizer,
+        lr=lr,
+        pretrained=pretrained,
+        restore_from_ckpt=restore_from_ckpt,
+    )
+    return model
 
 
 @hydra.main(version_base=None, config_path="./configs/", config_name="default")
 def main(cfg: DictConfig) -> None:
     pl.seed_everything(seed=cfg.main.seed)
+    torch.set_float32_matmul_precision("medium")
 
-    datamodule = COCODatamodule(
+    datamodule = COCODataModule(
         data_dir=cfg.data.data_path,
         batch_size=cfg.data.batch_size,
-        cfg=cfg,
+        data_subset=cfg.data.subset,
+        sanitize_bb=cfg.transforms.sanitize_bb,
+        rpdist=cfg.transforms.rpdist,
+        rzout=cfg.transforms.rzout,
+        rioucrop=cfg.transforms.rioucrop,
+        rhflip=cfg.transforms.rhflip,
+        overfit_batch=cfg.main.overfit_batch,
+        urban=cfg.data.urban,
+        workers=-1,
     )
 
-    if cfg.model.restore_from_ckpt is not None:
-        print("Restoring entire state from checkpoint...")
-        model = None  # TODO
-    else:
-        print("Creating new model...")
-        model = models.get_model(
-            "maskrcnn_resnet50_fpn_v2", weights=None, weights_backbone=None
-        )
+    model = create_model(
+        optimizer=cfg.model.optimizer,
+        lr=cfg.model.lr,
+        pretrained=cfg.model.pretrained,
+        restore_from_ckpt=cfg.model.restore_from_ckpt,
+    )
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=hydra.core.hydra_config.HydraConfig.get()["runtime"]["output_dir"],
@@ -64,6 +93,8 @@ def main(cfg: DictConfig) -> None:
         logger = WandbLogger(
             project="urban-autonomy-instance-segmentation", log_model=True
         )
+        hparams = OmegaConf.to_container(cfg)
+        logger.log_hyperparams(hparams)
     else:
         logger = None
 
@@ -80,10 +111,9 @@ def main(cfg: DictConfig) -> None:
         accelerator="gpu"
         if torch.cuda.is_available() and cfg.training.devices > 0
         else "cpu",
-        precision=cfg.training.precision,
         max_epochs=cfg.training.epochs,
-        benchmark=True if cfg.training.devices > 0 else False,
         sync_batchnorm=True if torch.cuda.is_available() else False,
+        log_every_n_steps=10,
     )
     trainer.fit(model, datamodule)
     trainer.test(model, datamodule, ckpt_path="best")

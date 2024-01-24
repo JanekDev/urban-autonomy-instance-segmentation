@@ -1,50 +1,38 @@
 main:
   name: default
   seed: 42
-  save_dir: /home/host/Projects/vision
-  log_dir: /home/host/Projects/vision
+  save_dir: artifacts/
+  log_dir: logs/
   log_level: info
   overfit_batch: true
   logging: true
   
 data: 
-  data_path: /home/host/Projects/vision/data
-  data_fold: -1
+  data_path: data/
   workers: 10
-  batch_size: 8
-  image_size: [1920, 1080]
-  subset: 0.05
+  batch_size: 16
+  subset: 0.03
+  urban: true
 
-transformations:
-  SanitizeBoundingBoxes: true
-  RandomPhotometricDistort:
-    enabled: true
-    probability: 1
-  RandomZoomOut:
-    enabled: true
-    fill: [123, 117, 104]
-  RandomIoUCrop:
-    enabled: true
-  RandomHorizontalFlip:
-    enabled: true
-    probability: 1
+transforms:
+  sanitize_bb: false
+  rpdist: [false, 1]
+  rzout: [false, [123, 117, 104]]
+  rioucrop: [false]
+  rhflip: [false, 1]
 
 model:
-  loss: mse
   lr: 3e-4
-  obj_threshold: 0.2
+  pretrained: false
+  optimizer: adam
   restore_from_ckpt:
 
 training:
-  devices: 1
+  devices: -1
   precision: 16-mixed
   epochs: 100
 
 tracking:
-  monitor: val_f1 # val_loss, val_f1
+  monitor: val_loss # val_loss, val_f1
   monitor_mode: max
   es_patience: 20 # early stopping patience
-
-data_stats:
-  data_mean: [ 0.38051389, 0.38728308, 0.37517634 ]
-  data_std: [ 0.23425215, 0.2339074,  0.24194536 ]

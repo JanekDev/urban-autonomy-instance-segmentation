@@ -12,17 +12,19 @@ from torch.utils.data import DataLoader
 from typing import Tuple, List
 
 
-class COCODatamodule(LightningDataModule):
+class COCODataModule(LightningDataModule):
     def __init__(
         self,
         data_dir: str,
         batch_size: int = 32,
         data_subset: float = 1.0,
-        sanitize_bb: bool = True,
-        rpdist: Tuple[bool, float] = (True, 1),
-        rzout: Tuple[bool, List[int]] = (True, (123, 117, 104)),
-        rioucrop: Tuple[bool] = (True,),
-        rhflip: Tuple[bool, float] = (True, 1),
+        sanitize_bb: bool = False,
+        rpdist: Tuple[bool, float] = (False, 1),
+        rzout: Tuple[bool, List[int]] = (False, (123, 117, 104)),
+        rioucrop: Tuple[bool] = (False,),
+        rhflip: Tuple[bool, float] = (False, 1),
+        overfit_batch: bool = True,
+        urban=False,
     ):
         super().__init__()
         self.data_dir = data_dir
@@ -33,6 +35,8 @@ class COCODatamodule(LightningDataModule):
         self.rzout = rzout
         self.rioucrop = rioucrop
         self.rhflip = rhflip
+        self.overfit_batch = overfit_batch
+        self.urban = urban
 
     def _prepare_augmentations(self, transforms_list):
         if self.sanitize_bb:
@@ -70,6 +74,51 @@ class COCODatamodule(LightningDataModule):
             annFile=pathlib.Path(self.data_dir) / "annotations/instances_val2017.json",
             transforms=test_transforms,
         )
+        print(len(self.train_dataset), len(self.val_dataset))
+
+        # 1 - person
+        # 2 - bicycle
+        # 3 - car
+        # 4 - motorcycle
+        # 6 - bus
+        # 8 - truck
+        # 10 - traffic light
+        # 11 - fire hydrant
+        # 13 - stop sign
+        # 14 - parking meter
+        # 17 - cat
+        # 18 - dog
+
+        if self.urban:
+            urban_ids = [1, 2, 3, 4, 6, 8, 10, 11, 13, 14]
+            self.train_dataset.ids = [
+                image_id
+                for image_id in self.train_dataset.ids
+                if len(
+                    self.train_dataset.coco.getAnnIds(imgIds=image_id, catIds=urban_ids)
+                )
+                > 0
+            ]
+            self.val_dataset.ids = [
+                image_id
+                for image_id in self.val_dataset.ids
+                if len(
+                    self.val_dataset.coco.getAnnIds(imgIds=image_id, catIds=urban_ids)
+                )
+                > 0
+            ]
+        else:
+            self.train_dataset.ids = [
+                image_id
+                for image_id in self.train_dataset.ids
+                if len(self.train_dataset.coco.getAnnIds(imgIds=image_id)) > 0
+            ]
+            self.val_dataset.ids = [
+                image_id
+                for image_id in self.val_dataset.ids
+                if len(self.val_dataset.coco.getAnnIds(imgIds=image_id)) > 0
+            ]
+        print(len(self.train_dataset), len(self.val_dataset))
 
         self.train_dataset = datasets.wrap_dataset_for_transforms_v2(
             self.train_dataset, target_keys=["boxes", "labels", "masks"]
@@ -102,7 +151,7 @@ class COCODatamodule(LightningDataModule):
                 batch_size=self.batch_size,
                 collate_fn=self.collate_fn,
             )
-            if self.main.overfit_batch
+            if self.overfit_batch
             else DataLoader(
                 self.val_dataset,
                 batch_size=self.batch_size,
@@ -115,8 +164,7 @@ class COCODatamodule(LightningDataModule):
 
 
 if __name__ == "__main__":
-    datamod = COCODatamodule(data_dir="data/", batch_size=7, data_subset=0.05)
+    datamod = COCODataModule(data_dir="data/", batch_size=7, data_subset=0.05)
     datamod.setup()
     for batch in datamod.train_dataloader():
-        print(batch[1][0])
         break
