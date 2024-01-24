@@ -5,6 +5,8 @@ import hydra
 import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig
+from torchvision import models
+from omegaconf import OmegaConf
 
 from pytorch_lightning.callbacks import (
     ModelCheckpoint,
@@ -12,27 +14,32 @@ from pytorch_lightning.callbacks import (
     EarlyStopping,
     LearningRateMonitor,
 )
-from pytorch_lightning.loggers import NeptuneLogger
+from pytorch_lightning.loggers import WandbLogger
 from torch.distributed.algorithms.ddp_comm_hooks import (
     default_hooks as default,
 )
 
-# import model
-# import datamodules
+from src.datamodule.coco_datamodule import COCODatamodule
 
 
-@hydra.main(version_base=None, config_path="./configs/")
+@hydra.main(version_base=None, config_path="./configs/", config_name="default")
 def main(cfg: DictConfig) -> None:
     pl.seed_everything(seed=cfg.main.seed)
 
-    datamodule = None  # TODO also implement overfit 1 batch
+    datamodule = COCODatamodule(
+        data_dir=cfg.data.data_path,
+        batch_size=cfg.data.batch_size,
+        cfg=cfg,
+    )
 
     if cfg.model.restore_from_ckpt is not None:
         print("Restoring entire state from checkpoint...")
         model = None  # TODO
     else:
         print("Creating new model...")
-        model = None  # TODO
+        model = models.get_model(
+            "maskrcnn_resnet50_fpn_v2", weights=None, weights_backbone=None
+        )
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=hydra.core.hydra_config.HydraConfig.get()["runtime"]["output_dir"],
@@ -53,11 +60,9 @@ def main(cfg: DictConfig) -> None:
 
     lr_monitor = LearningRateMonitor(logging_interval="step")
 
-    if not cfg.debug:
-        logger = NeptuneLogger(
-            api_key=os.environ["WANDB_API_TOKEN"],  # TODO
-            project="visionaries2137/urban-autonomy-instance-segmentation",
-            log_model_checkpoints=True,
+    if cfg.main.logging:
+        logger = WandbLogger(
+            project="urban-autonomy-instance-segmentation", log_model=True
         )
     else:
         logger = None
@@ -68,8 +73,6 @@ def main(cfg: DictConfig) -> None:
         early_stopping_callback,
         lr_monitor,
     ]
-
-    torch.set_float32_matmul_precision("medium")
     trainer = pl.Trainer(
         logger=logger,
         callbacks=callbacks,
@@ -82,13 +85,8 @@ def main(cfg: DictConfig) -> None:
         benchmark=True if cfg.training.devices > 0 else False,
         sync_batchnorm=True if torch.cuda.is_available() else False,
     )
-
-    if not cfg.test_only:
-        trainer.fit(model, datamodule)
-        trainer.test(model, datamodule, ckpt_path="best")
-    else:
-        assert cfg.restore_from_ckpt is not None
-        trainer.test(model, datamodule)
+    trainer.fit(model, datamodule)
+    trainer.test(model, datamodule, ckpt_path="best")
 
 
 if __name__ == "__main__":

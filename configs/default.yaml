@@ -4,7 +4,8 @@ main:
   save_dir: /home/host/Projects/vision
   log_dir: /home/host/Projects/vision
   log_level: info
-  overfit_batch: True
+  overfit_batch: true
+  logging: true
   
 data: 
   data_path: /home/host/Projects/vision/data
@@ -12,6 +13,7 @@ data:
   workers: 10
   batch_size: 8
   image_size: [1920, 1080]
+  subset: 0.05
 
 transformations:
   SanitizeBoundingBoxes: true
@@ -31,7 +33,7 @@ model:
   loss: mse
   lr: 3e-4
   obj_threshold: 0.2
-  restore_from_ckpt: /home/host/Projects/vision/ckpts/default/last.ckpt
+  restore_from_ckpt:
 
 training:
   devices: 1
