@@ -1,9 +1,6 @@
 # Install requirements
 pip install -r requirements.txt
 
-# Install Detectron2
-python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
-
 # Download COCO dataset
 cd data
 wget http://images.cocodataset.org/zips/val2017.zip
