@@ -47,16 +47,27 @@ class MaskRCNN(pl.LightningModule):
         images, targets = batch
         loss_dict = self.model(images, targets)
         total_loss = sum(loss for loss in loss_dict.values())
-        self.log("train_loss", total_loss)
+        self.log("train_compound_loss", total_loss)
+        self.log("train_loss_classifier", loss_dict["loss_classifier"])
+        self.log("train_loss_box_reg", loss_dict["loss_box_reg"])
+        self.log("train_loss_mask", loss_dict["loss_mask"])
+        self.log("train_loss_objectness", loss_dict["loss_objectness"])
+        self.log("train_loss_rpn_box_reg", loss_dict["loss_rpn_box_reg"])
         return total_loss
 
     def validation_step(self, batch, batch_idx):
         images, targets = batch
-        self.model.training = True  # HACK
-        loss_dict = self.model(images, targets)
-        self.model.training = False  # HACK
+        pred_dict = self.model(images, targets)  # for metrics
+        self.model.train()  # HACK it is safe to do this here
+        loss_dict = self.model(images, targets)  # for model monitoring
         total_loss = sum(loss for loss in loss_dict.values())
-        self.log("val_loss", total_loss)
+        self.model.eval()
+        self.log("val_compound_loss", total_loss)
+        self.log("val_loss_classifier", loss_dict["loss_classifier"])
+        self.log("val_loss_box_reg", loss_dict["loss_box_reg"])
+        self.log("val_loss_mask", loss_dict["loss_mask"])
+        self.log("val_loss_objectness", loss_dict["loss_objectness"])
+        self.log("val_loss_rpn_box_reg", loss_dict["loss_rpn_box_reg"])
         return total_loss
 
     def configure_optimizers(self):
