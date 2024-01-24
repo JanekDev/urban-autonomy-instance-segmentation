@@ -54,7 +54,7 @@ class MaskRCNN(pl.LightningModule):
         images, targets = batch
         self.model.training = True  # HACK
         loss_dict = self.model(images, targets)
-        self.model.training = True  # HACK
+        self.model.training = False  # HACK
         total_loss = sum(loss for loss in loss_dict.values())
         self.log("val_loss", total_loss)
         return total_loss
