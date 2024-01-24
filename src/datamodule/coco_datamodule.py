@@ -25,6 +25,7 @@ class COCODataModule(LightningDataModule):
         rhflip: Tuple[bool, float] = (False, 1),
         overfit_batch: bool = True,
         urban=False,
+        workers: int = 4,
     ):
         super().__init__()
         self.data_dir = data_dir
@@ -37,6 +38,7 @@ class COCODataModule(LightningDataModule):
         self.rhflip = rhflip
         self.overfit_batch = overfit_batch
         self.urban = urban
+        self.workers = workers
 
     def _prepare_augmentations(self, transforms_list):
         if self.sanitize_bb:
@@ -142,6 +144,7 @@ class COCODataModule(LightningDataModule):
             batch_size=self.batch_size,
             collate_fn=self.collate_fn,
             shuffle=True,
+            num_workers=self.workers,
         )
 
     def val_dataloader(self):
@@ -150,12 +153,14 @@ class COCODataModule(LightningDataModule):
                 self.train_dataset,
                 batch_size=self.batch_size,
                 collate_fn=self.collate_fn,
+                num_workers=self.workers,
             )
             if self.overfit_batch
             else DataLoader(
                 self.val_dataset,
                 batch_size=self.batch_size,
                 collate_fn=self.collate_fn,
+                num_workers=self.workers,
             )
         )
 

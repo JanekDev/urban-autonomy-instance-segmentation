@@ -9,7 +9,7 @@ main:
   
 data: 
   data_path: data/
-  workers: 10
+  workers: 16
   batch_size: 16
   subset: 0.03
   urban: true

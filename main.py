@@ -60,7 +60,7 @@ def main(cfg: DictConfig) -> None:
         rhflip=cfg.transforms.rhflip,
         overfit_batch=cfg.main.overfit_batch,
         urban=cfg.data.urban,
-        workers=-1,
+        workers=cfg.data.workers,
     )
 
     model = create_model(
