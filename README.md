@@ -17,10 +17,16 @@ git clone --recurse-submodules https://github.com/JanekDev/urban-autonomy-instan
 
 ### Requirements
     
-Install requirements with: 
+Create a virtual environment and install the required packages:
 
 ```
 pip install -r requirements.txt
+```
+
+Or if you want to completely setup the repository (large GPU nodes for rent), including the datasets, run:
+
+```
+bash setup_enviroment.sh
 ```
 
 ### Checkpoints
