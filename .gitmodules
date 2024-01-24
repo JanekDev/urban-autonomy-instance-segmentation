@@ -1,3 +1,6 @@
 [submodule "submodules/gradio_demo"]
 	path = submodules/gradio_demo
 	url = git@hf.co:spaces/MWilinski/urban-autonomy-instance-segmentation
+[submodule "submodules/detectron2"]
+	path = submodules/detectron2
+	url = git@github.com:facebookresearch/detectron2.git
