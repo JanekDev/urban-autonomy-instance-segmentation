@@ -28,7 +28,7 @@ model:
   restore_from_ckpt:
 
 training:
-  devices: -1
+  devices: 1
   precision: 16-mixed
   epochs: 100
 
