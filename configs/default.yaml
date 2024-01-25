@@ -33,6 +33,6 @@ training:
   epochs: 100
 
 tracking:
-  monitor: val_loss # val_loss, val_f1
+  monitor: val_loss
   monitor_mode: max
   es_patience: 20 # early stopping patience

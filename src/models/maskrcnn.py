@@ -5,7 +5,7 @@ from torch import nn
 from torch.optim import Adam, Optimizer
 from torchvision.models.detection import maskrcnn_resnet50_fpn
 from torchvision.models.detection.mask_rcnn import MaskRCNN_ResNet50_FPN_Weights
-from src.datamodule.coco_datamodule import COCODataModule
+from ..metrics.metrics import AveragePrecision
 
 
 class MaskRCNN(pl.LightningModule):
@@ -37,6 +37,8 @@ class MaskRCNN(pl.LightningModule):
 
     def setup(self, stage: Optional[str] = None):
         self.model.to(self.device)
+        self.metric1 = AveragePrecision(num_classes=80, iou_threshold=0.5)
+        self.metric2 = AveragePrecision(num_classes=80, calculate_full_ap=True)
 
     def forward(self, inputs, target=None):
         self.model.eval()
@@ -58,6 +60,8 @@ class MaskRCNN(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         images, targets = batch
         pred_dict = self.model(images, targets)  # for metrics
+        self.metric(pred_dict["masks"], targets["masks"])
+        self.metric2(pred_dict["masks"], targets["masks"])
         self.model.train()  # HACK it is safe to do this here
         loss_dict = self.model(images, targets)  # for model monitoring
         total_loss = sum(loss for loss in loss_dict.values())
@@ -68,6 +72,8 @@ class MaskRCNN(pl.LightningModule):
         self.log("val_loss_mask", loss_dict["loss_mask"])
         self.log("val_loss_objectness", loss_dict["loss_objectness"])
         self.log("val_loss_rpn_box_reg", loss_dict["loss_rpn_box_reg"])
+        self.log("val_AP50", self.metric.ap_scores.mean())
+        self.log("val_AP_full", self.metric2.ap_scores.mean())
         return total_loss
 
     def configure_optimizers(self):

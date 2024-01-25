@@ -1,11 +1,35 @@
 # Urban Autonomy Instance Segmentation
 
 ## Introduction
+ 
+<div style="display: flex; width: 100%;">
+    <img src="media/image.jpeg" style="width: 50%;" alt="Urban Environment"/>
+    <img src="media/image_result.png" style="width: 50%;" alt="Instance Segmentation Result"/>
+</div>
 
-"Urban Autonomy Instance Segmentation" is a project focused on comparing deep learning instance segmentation models in an urban environments autonomous driving technology setups. Utilizing the COCO dataset, this project applies instance segmentation methods to identify and segment various objects encountered in urban driving scenarios, such as vehicles, pedestrians, and street signs.
+
+***Urban Autonomy Instance Segmentation*** is a project focused on comparing deep learning instance segmentation models in an urban environments autonomous driving technology setups. Utilizing the COCO dataset, this project applies instance segmentation methods to identify and segment various objects encountered in urban driving scenarios, such as vehicles, pedestrians, and street signs.
 
 ## Dataset
-TODO
+
+We used pruned version of COCO dataset, which contains only images relevant to urban driving scenarios.
+Classes present in the dataset are:
+- person
+- bicycle
+- car
+- motorcycle
+- bus
+- truck
+- traffic light
+- fire hydrant
+- stop sign
+- parking meter
+- cat
+- dog
+
+We provide script to download dataset in `setup_enviroment.sh` file.
+
+
 
 ## Usage
 
@@ -29,16 +53,13 @@ Or if you want to completely setup the repository (large GPU nodes for rent), in
 bash setup_enviroment.sh
 ```
 
-### Checkpoints
-
-Will be available soon.
-
 ### Training
 
+## Mask R-CNN
 ```bash
 python3 main.py --config-name config.yaml
 ```
 
-### Testing and evaluation
+## Other models
 
-TODO
+See the repository of the model you want to train for instructions (submodules) and run the training accordingly.

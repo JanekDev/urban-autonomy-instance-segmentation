@@ -4,3 +4,9 @@
 [submodule "submodules/detectron2"]
 	path = submodules/detectron2
 	url = git@github.com:facebookresearch/detectron2.git
+[submodule "submodules/embed_mask"]
+	path = submodules/embed_mask
+	url = git@github.com:yinghdb/EmbedMask.git
+[submodule "submodules/yolact"]
+	path = submodules/yolact
+	url = git@github.com:dbolya/yolact.git
