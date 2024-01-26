@@ -1,11 +1,8 @@
 # Urban Autonomy Instance Segmentation
 
 ## Introduction
- 
-<div style="display: flex; width: 100%;">
-    <img src="media/image.jpeg" style="width: 50%;" alt="Urban Environment"/>
-    <img src="media/image_result.png" style="width: 50%;" alt="Instance Segmentation Result"/>
-</div>
+
+![Urban Environment](media/image.jpeg) ![Instance Segmentation Result](media/image_result.png)
 
 
 ***Urban Autonomy Instance Segmentation*** is a project focused on comparing deep learning instance segmentation models in an urban environments autonomous driving technology setups. Utilizing the COCO dataset, this project applies instance segmentation methods to identify and segment various objects encountered in urban driving scenarios, such as vehicles, pedestrians, and street signs.
