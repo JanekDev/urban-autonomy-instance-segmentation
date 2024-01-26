@@ -50,13 +50,13 @@ Or if you want to completely setup the repository (large GPU nodes for rent), in
 bash setup_enviroment.sh
 ```
 
-### Training
+## Training
 
-## Mask R-CNN
+### Mask R-CNN
 ```bash
 python3 main.py --config-name config.yaml
 ```
 
-## Other models
+### Other models
 
 See the repository of the model you want to train for instructions (submodules) and run the training accordingly.
